@@ -1,0 +1,328 @@
+// =====================================
+// IMPORTACOES
+// =====================================
+const qrcode = require("qrcode-terminal");
+const { Client, LocalAuth } = require("whatsapp-web.js");
+
+// =====================================
+// CLIENTE WHATSAPP
+// =====================================
+const client = new Client({
+  authStrategy: new LocalAuth(),
+  puppeteer: {
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--single-process",
+    ],
+  },
+});
+
+// =====================================
+// QR CODE
+// =====================================
+client.on("qr", (qr) => {
+  console.log("Escaneie o QR Code:");
+  qrcode.generate(qr, { small: true });
+});
+
+// =====================================
+// BOT ONLINE
+// =====================================
+client.on("ready", () => {
+  console.log("BOT ONLINE COM SUCESSO");
+});
+
+// =====================================
+// DESCONEXAO
+// =====================================
+client.on("disconnected", (reason) => {
+  console.log("WhatsApp desconectado:", reason);
+});
+
+// =====================================
+// INICIAR BOT
+// =====================================
+client.initialize();
+
+// =====================================
+// CONTROLES
+// =====================================
+const sessions = new Map();
+const antiSpam = new Map();
+
+// =====================================
+// LINK DO CARDAPIO
+// =====================================
+const linkPrincipal = "https://instadelivery.com.br/fortindelivery";
+
+// =====================================
+// PALAVRAS-CHAVE DE VENDA
+// =====================================
+const gatilhosMenu = /^(menu|oi|ola|bom dia|boa tarde|boa noite|pedido|opa)$/i;
+const gatilhosCompra = [
+  "cerveja",
+  "cervejas",
+  "bebida",
+  "bebidas",
+  "whisky",
+  "vodka",
+  "gin",
+  "energetico",
+  "refrigerante",
+  "carvao",
+  "gelo",
+  "comprar",
+  "pedir",
+  "pedido",
+];
+
+// =====================================
+// NORMALIZAR TEXTO
+// =====================================
+const normalizarTexto = (texto) =>
+  texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+// =====================================
+// BAIRROS
+// =====================================
+const bairros = {
+  "vila santa rita": 0,
+  "barreiro": 0,
+  "milionarios": 0,
+  "lindeia": 0,
+  "vila pinho": 0,
+  "jatoba 4": 0,
+  "tirol": 0,
+  "solar do barreiro": 0,
+  "diamante": 0,
+  "urucuia": 0,
+};
+
+// =====================================
+// MENSAGENS
+// =====================================
+const horarioFuncionamento = `
+Horario de Funcionamento
+
+Quarta a Sexta: 10h as 22h
+Sabado: 10h as 23:59
+Domingo: 10h as 23:59
+
+Estamos esperando seu pedido.
+`;
+
+const enderecoLoja = `
+Nosso Endereco
+
+Rua Jose Pedro de Brito, 407
+Vila Santa Rita - Belo Horizonte
+
+https://maps.app.goo.gl/3PtSGsGTevirUPYKA
+`;
+
+const menuPrincipal = `Fortin Delivery
+
+Seu pedido de bebidas esta a poucos cliques.
+
+Faca seu pedido pelo cardapio:
+${linkPrincipal}
+
+Escolha uma opcao:
+
+1. Taxa de entrega
+2. Bairros atendidos
+3. Horario de funcionamento
+4. Endereco`;
+
+const mensagemCompraDireta = `Trabalhamos com bebidas e itens para seu pedido sair rapido.
+
+Monte seu pedido no cardapio:
+${linkPrincipal}
+
+Se quiser, eu tambem posso te ajudar com:
+1. Taxa de entrega
+2. Bairros atendidos
+3. Horario de funcionamento
+4. Endereco`;
+
+// =====================================
+// DELAY
+// =====================================
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
+// =====================================
+// RECEBER MENSAGENS
+// =====================================
+client.on("message", async (msg) => {
+  try {
+    // =====================================
+    // BLOQUEIOS IMPORTANTES
+    // =====================================
+    if (!msg.from) return;
+    if (msg.from === "status@broadcast") return;
+    if (msg.from.endsWith("@g.us")) return;
+    if (msg.fromMe) return;
+    if (!msg.body) return;
+
+    // =====================================
+    // ANTI SPAM
+    // =====================================
+    const agora = Date.now();
+    const ultimo = antiSpam.get(msg.from) || 0;
+
+    if (agora - ultimo < 3000) return;
+
+    antiSpam.set(msg.from, agora);
+
+    const chat = await msg.getChat();
+    if (chat.isGroup) return;
+
+    const textoOriginal = msg.body.trim();
+    const texto = normalizarTexto(textoOriginal);
+
+    if (!sessions.has(msg.from)) {
+      sessions.set(msg.from, { etapa: "menu" });
+    }
+
+    const session = sessions.get(msg.from);
+
+    const typing = async () => {
+      await chat.sendStateTyping();
+      await delay(1500);
+    };
+
+    // =====================================
+    // MENU
+    // =====================================
+    if (gatilhosMenu.test(texto)) {
+      await typing();
+      await client.sendMessage(msg.from, menuPrincipal);
+      session.etapa = "menu";
+      return;
+    }
+
+    // =====================================
+    // INTERESSE DE COMPRA
+    // =====================================
+    if (gatilhosCompra.some((item) => texto.includes(item))) {
+      await typing();
+      await client.sendMessage(msg.from, mensagemCompraDireta);
+      session.etapa = "menu";
+      return;
+    }
+
+    // =====================================
+    // MENU OPCOES
+    // =====================================
+    if (session.etapa === "menu") {
+      if (texto === "1") {
+        await typing();
+        await client.sendMessage(
+          msg.from,
+          "Me diga seu bairro para consultar a taxa e agilizar seu pedido."
+        );
+        session.etapa = "taxa";
+        return;
+      }
+
+      if (texto === "2") {
+        await typing();
+
+        const lista = Object.keys(bairros)
+          .map((b) => `- ${b}`)
+          .join("\n");
+
+        await client.sendMessage(
+          msg.from,
+          `Bairros atendidos
+
+${lista}
+
+Digite seu bairro para consultar a taxa e seguir para o pedido.`
+        );
+
+        session.etapa = "taxa";
+        return;
+      }
+
+      if (texto === "3") {
+        await typing();
+        await client.sendMessage(msg.from, horarioFuncionamento);
+        return;
+      }
+
+      if (texto === "4") {
+        await typing();
+        await client.sendMessage(msg.from, enderecoLoja);
+        return;
+      }
+    }
+
+    // =====================================
+    // CONSULTA TAXA
+    // =====================================
+    if (session.etapa === "taxa") {
+      if (texto in bairros) {
+        const taxa = bairros[texto];
+
+        await typing();
+
+        if (taxa === 0) {
+          await client.sendMessage(
+            msg.from,
+            `Entrega para ${texto} e GRATIS.
+
+Pode aproveitar e fazer seu pedido agora:
+${linkPrincipal}`
+          );
+        } else {
+          await client.sendMessage(
+            msg.from,
+            `Taxa para ${texto}
+
+R$ ${taxa},00
+
+Faca seu pedido aqui:
+${linkPrincipal}`
+          );
+        }
+
+        session.etapa = "menu";
+        return;
+      }
+
+      await typing();
+      await client.sendMessage(
+        msg.from,
+        `Ainda nao atendemos esse bairro.
+
+Digite outro bairro ou menu.`
+      );
+      return;
+    }
+
+    // =====================================
+    // FALLBACK
+    // =====================================
+    await typing();
+    await client.sendMessage(
+      msg.from,
+      `Nao entendi.
+
+Se voce quiser pedir sua bebida agora:
+${linkPrincipal}
+
+Digite menu para ver opcoes ou me envie o nome da bebida que voce procura.`
+    );
+  } catch (erro) {
+    console.log("ERRO:", erro);
+  }
+});

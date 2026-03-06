@@ -1,0 +1,16 @@
+{
+  "name": "bot-fortin",
+  "version": "1.0.0",
+  "description": "Bot WhatsApp Fortin Delivery",
+  "main": "robo.js",
+  "scripts": {
+    "start": "node robo.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "moment-timezone": "^0.5.45",
+    "openai": "^4.78.1",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.34.2"
+  }
+}
