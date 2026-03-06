@@ -1,0 +1,41 @@
+[phases.setup]
+nixPkgs = [
+  "nodejs_20",
+  "glib",
+  "nss",
+  "nspr",
+  "atk",
+  "at-spi2-atk",
+  "cups",
+  "dbus",
+  "expat",
+  "fontconfig",
+  "freetype",
+  "gbm",
+  "gtk3",
+  "libdrm",
+  "mesa",
+  "pango",
+  "cairo",
+  "xorg.libX11",
+  "xorg.libXcomposite",
+  "xorg.libXcursor",
+  "xorg.libXdamage",
+  "xorg.libXext",
+  "xorg.libXfixes",
+  "xorg.libXi",
+  "xorg.libXrandr",
+  "xorg.libXrender",
+  "xorg.libXScrnSaver",
+  "xorg.libXtst",
+  "xorg.libxcb",
+  "xorg.libxshmfence",
+  "alsa-lib",
+  "stdenv.cc.cc.lib"
+]
+
+[phases.install]
+cmds = ["npm install"]
+
+[start]
+cmd = "npm start"
