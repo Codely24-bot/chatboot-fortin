@@ -21,13 +21,16 @@ const escapeHtml = (valor = "") =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+const sessionDataPath =
+  process.env.SESSION_DATA_PATH || path.join(__dirname, ".wwebjs_auth");
+
 // =====================================
 // CLIENTE WHATSAPP
 // =====================================
 const client = new Client({
     authStrategy: new LocalAuth({
         clientId: "fortin",
-        dataPath: path.join(__dirname, ".wwebjs_auth")
+        dataPath: sessionDataPath
     }),
     puppeteer: {
         headless: true,
