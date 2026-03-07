@@ -407,14 +407,29 @@ const normalizarTexto = (texto) =>
 const removerPontuacaoFinal = (texto) => texto.replace(/[!?.;,]+$/g, "").trim();
 
 const obterSaudacao = (texto) => {
-  if (texto === "bomdia" || texto === "bom dia") return "bom dia";
-  if (texto === "boa tarde") return "boa tarde";
-  if (texto === "boa noite") return "boa noite";
+  if (texto === "bomdia" || texto === "bom dia") return "🌅 Bom dia!";
+  if (texto === "boa tarde") return "🌤️ Boa tarde!";
+  if (texto === "boa noite") return "🌙 Boa noite!";
   return "";
 };
 
 function montarMenuPrincipal(saudacao = "") {
-  return saudacao ? `${saudacao}\n\n${menuPrincipal}` : menuPrincipal;
+  if (saudacao) {
+    return `${saudacao}
+
+Olá! Seja muito bem-vindo(a) 👋
+É um prazer ter você aqui.
+
+Sou o assistente virtual e estou aqui para te ajudar.
+Por favor, escolha uma das opções abaixo ou envie sua dúvida:
+
+1️⃣ Taxa de entrega
+2️⃣ Bairros atendidos
+3️⃣ Horário de funcionamento
+4️⃣ Endereço`;
+  }
+
+  return menuPrincipalPadrao;
 }
 
 // =====================================
@@ -575,6 +590,21 @@ Se quiser, também posso te ajudar com taxa de entrega, bairros atendidos, horá
 // =====================================
 // DELAY
 // =====================================
+const menuPrincipalPadrao = `🌅 Bom dia!
+🌤️ Boa tarde!
+🌙 Boa noite!
+
+Olá! Seja muito bem-vindo(a) 👋
+É um prazer ter você aqui.
+
+Sou o assistente virtual e estou aqui para te ajudar.
+Por favor, escolha uma das opções abaixo ou envie sua dúvida:
+
+1️⃣ Taxa de entrega
+2️⃣ Bairros atendidos
+3️⃣ Horário de funcionamento
+4️⃣ Endereço`;
+
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 // =====================================
