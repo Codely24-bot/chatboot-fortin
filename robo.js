@@ -435,7 +435,6 @@ const bairros = {
   "industrial": 0,
   "marilandia": 0,
   "jardim industrial": 0,
-  "jardim riacho das pedras": 0,
   "jardim do vale": 0,
   "jatoba 4": 0,
   "lindeia": 0,
@@ -466,6 +465,7 @@ const bairros = {
   "aguia dourada": 0,
   "miramar": 0,
   "araguaia": 0,
+  "santa cecilia": 0,
   "santa cecilia": 0,
 };
 
