@@ -466,7 +466,7 @@ const bairros = {
   "miramar": 0,
   "araguaia": 0,
   "santa cecilia": 0,
-  "santa cecilia": 0,
+  "vista alegre": 0,
 };
 
 // =====================================
