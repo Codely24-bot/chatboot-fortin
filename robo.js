@@ -344,7 +344,7 @@ const linkPrincipal = "https://instadelivery.com.br/fortindelivery";
 // =====================================
 // PALAVRAS-CHAVE DE VENDA
 // =====================================
-const gatilhosMenu = /^(menu|oi|ola|bom dia|boa tarde|boa noite|pedido|opa)$/i;
+const gatilhosMenu = /^(menu|oi|ola|bomdia|bom dia|boa tarde|boa noite|pedido|opa)$/i;
 const gatilhosCompra = [
   "cerveja",
   "cervejas",
@@ -403,6 +403,19 @@ const normalizarTexto = (texto) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+
+const removerPontuacaoFinal = (texto) => texto.replace(/[!?.;,]+$/g, "").trim();
+
+const obterSaudacao = (texto) => {
+  if (texto === "bomdia" || texto === "bom dia") return "bom dia";
+  if (texto === "boa tarde") return "boa tarde";
+  if (texto === "boa noite") return "boa noite";
+  return "";
+};
+
+function montarMenuPrincipal(saudacao = "") {
+  return saudacao ? `${saudacao}\n\n${menuPrincipal}` : menuPrincipal;
+}
 
 // =====================================
 // BAIRROS
@@ -604,6 +617,7 @@ client.on("message", async (msg) => {
 
     const textoOriginal = msg.body.trim();
     const texto = normalizarTexto(textoOriginal);
+    const textoSemPontuacaoFinal = removerPontuacaoFinal(texto);
 
     if (!sessions.has(msg.from)) {
       sessions.set(msg.from, { etapa: "menu" });
@@ -619,11 +633,12 @@ client.on("message", async (msg) => {
     // =====================================
     // MENU
     // =====================================
-    if (gatilhosMenu.test(texto)) {
+    if (gatilhosMenu.test(textoSemPontuacaoFinal)) {
+      const saudacao = obterSaudacao(textoSemPontuacaoFinal);
 
       await typing();
 
-      await client.sendMessage(msg.from, menuPrincipal);
+      await client.sendMessage(msg.from, montarMenuPrincipal(saudacao));
 
       session.etapa = "menu";
       return;
