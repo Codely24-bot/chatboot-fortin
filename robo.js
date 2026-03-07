@@ -2,6 +2,7 @@
 // IMPORTAÇÕES
 // =====================================
 const http = require("http");
+const path = require("path");
 const qrcode = require("qrcode-terminal");
 const QRCode = require("qrcode");
 const { Client, LocalAuth } = require("whatsapp-web.js");
@@ -24,7 +25,10 @@ const escapeHtml = (valor = "") =>
 // CLIENTE WHATSAPP
 // =====================================
 const client = new Client({
-    authStrategy: new LocalAuth(),
+    authStrategy: new LocalAuth({
+        clientId: "fortin",
+        dataPath: path.join(__dirname, ".wwebjs_auth")
+    }),
     puppeteer: {
         headless: true,
         args: [
