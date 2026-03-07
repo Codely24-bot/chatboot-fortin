@@ -335,6 +335,7 @@ client.initialize();
 // =====================================
 const sessions = new Map();
 const antiSpam = new Map();
+const DURACAO_ATENDIMENTO_HUMANO_MS = 5 * 60 * 1000;
 
 // =====================================
 // LINK DO CARDÁPIO
@@ -406,11 +407,16 @@ const normalizarTexto = (texto) =>
 
 const removerPontuacaoFinal = (texto) => texto.replace(/[!?.;,]+$/g, "").trim();
 
-const obterSaudacao = (texto) => {
+const obterSaudacao = (texto = "") => {
   if (texto === "bomdia" || texto === "bom dia") return "🌅 Bom dia!";
   if (texto === "boa tarde") return "🌤️ Boa tarde!";
   if (texto === "boa noite") return "🌙 Boa noite!";
-  return "";
+
+  const horaAtual = new Date().getHours();
+
+  if (horaAtual < 12) return "🌅 Bom dia!";
+  if (horaAtual < 18) return "🌤️ Boa tarde!";
+  return "🌙 Boa noite!";
 };
 
 function montarMenuPrincipal(saudacao = "") {
@@ -421,12 +427,20 @@ Olá! Seja muito bem-vindo(a) 👋
 É um prazer ter você aqui.
 
 Sou o assistente virtual e estou aqui para te ajudar.
+🍻 Fortin Delivery
+
+Seu pedido de bebidas está a poucos cliques.
+
+Faça seu pedido pelo cardápio:
+👉 ${linkPrincipal}
+
 Por favor, escolha uma das opções abaixo ou envie sua dúvida:
 
 1️⃣ Taxa de entrega
 2️⃣ Bairros atendidos
 3️⃣ Horário de funcionamento
-4️⃣ Endereço`;
+4️⃣ Endereço
+5️⃣ Falar com atendente`;
   }
 
   return menuPrincipalPadrao;
@@ -598,12 +612,20 @@ Olá! Seja muito bem-vindo(a) 👋
 É um prazer ter você aqui.
 
 Sou o assistente virtual e estou aqui para te ajudar.
+🍻 Fortin Delivery
+
+Seu pedido de bebidas está a poucos cliques.
+
+Faça seu pedido pelo cardápio:
+👉 ${linkPrincipal}
+
 Por favor, escolha uma das opções abaixo ou envie sua dúvida:
 
 1️⃣ Taxa de entrega
 2️⃣ Bairros atendidos
 3️⃣ Horário de funcionamento
-4️⃣ Endereço`;
+4️⃣ Endereço
+5️⃣ Falar com atendente`;
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -650,45 +672,37 @@ client.on("message", async (msg) => {
     const textoSemPontuacaoFinal = removerPontuacaoFinal(texto);
 
     if (!sessions.has(msg.from)) {
-      sessions.set(msg.from, { etapa: "menu" });
+      sessions.set(msg.from, { etapa: "menu", pausaAte: 0 });
     }
 
     const session = sessions.get(msg.from);
+
+    if (session.pausaAte && session.pausaAte > agora) {
+      return;
+    }
+
+    if (session.pausaAte && session.pausaAte <= agora) {
+      session.pausaAte = 0;
+      session.etapa = "menu";
+    }
 
     const typing = async () => {
       await chat.sendStateTyping();
       await delay(1500);
     };
 
+    const acionouGatilhoMenu = gatilhosMenu.test(textoSemPontuacaoFinal);
+    const acionouGatilhoCardapio = gatilhosCardapio.some((item) => texto.includes(item));
+    const acionouGatilhoCompra = gatilhosCompra.some((item) => texto.includes(item));
+
     // =====================================
-    // MENU
+    // SAUDACAO E ENTRADA
     // =====================================
-    if (gatilhosMenu.test(textoSemPontuacaoFinal)) {
+    if (acionouGatilhoMenu || acionouGatilhoCardapio || acionouGatilhoCompra) {
       const saudacao = obterSaudacao(textoSemPontuacaoFinal);
 
       await typing();
-
       await client.sendMessage(msg.from, montarMenuPrincipal(saudacao));
-
-      session.etapa = "menu";
-      return;
-    }
-
-    // =====================================
-    // INTERESSE DE COMPRA
-    // =====================================
-    if (gatilhosCardapio.some((item) => texto.includes(item))) {
-
-      await typing();
-      await client.sendMessage(msg.from, mensagemCardapio);
-      session.etapa = "menu";
-      return;
-    }
-
-    if (gatilhosCompra.some((item) => texto.includes(item))) {
-
-      await typing();
-      await client.sendMessage(msg.from, mensagemCompraDireta);
       session.etapa = "menu";
       return;
     }
@@ -798,6 +812,21 @@ Digite seu bairro para consultar a taxa e seguir para o pedido.`
 
         await typing();
         await client.sendMessage(msg.from, enderecoLoja);
+        return;
+      }
+
+      if (texto === "5") {
+
+        session.etapa = "humano";
+        session.pausaAte = agora + DURACAO_ATENDIMENTO_HUMANO_MS;
+
+        await typing();
+        await client.sendMessage(
+          msg.from,
+`Perfeito! Um atendente humano vai assumir esta conversa agora.
+
+O robô ficará pausado por 5 minutos.`
+        );
         return;
       }
 
